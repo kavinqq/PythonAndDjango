@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>客服中心登入</title>
+    </head>
+    <body>
+        <table class = "table" border="1">
+            <thead>
+                <tr>
+                    <th>錯誤代碼</th>
+                    <th>錯誤訊息</th>
+                    <th>回傳檔案</th>
+                </tr>
+            </thead>
+            <tbody>        
+                <tr>
+                    <td>{{ result.code }}</td>
+                    <td>{{ result.message }}</td>
+                    <td>{{ result.data }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <a href="{% url 'unlock' %}" title="上一頁"> Test</a>
+    </body>
+</html>
