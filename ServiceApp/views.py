@@ -265,7 +265,7 @@ def igc1(request):
         "date_of_birth": '2022-05-23',
         "mobile_number": '0987654321',            
     })
-    times=1
+    times=10
     for i in range(times):
         r = requests.request("POST", RestPwdUrl, headers = JsonHeaders, data = payload)
         TestTimes2.add()
@@ -334,5 +334,5 @@ class IGC0View(APIView):
             # 'items()':response.items(),
         }
         # return response
-        return Response(response.tell())
+        return Response(data0)
 
