@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>客服中心登入</title>
-    </head>
-    <body>
-        <form action="{% url 'login' %}" method="post">
-            {% csrf_token %}
-            <label for="username">用戶名稱:</label>
-            <input type="text" name="username" id="username"> <br />
-            <label for="password">用戶密碼:</label>
-            <input type="password" name="password" id="password"> <br />
-            <input type="submit" value="登入" />
-            {% csrf_token %}
-        </form>
-    </body>
+
+<head>
+    <meta charset="UTF-8">
+    <title>客服中心登入</title>
+</head>
+
+<body>
+    <form action="{% url 'login' %}" method="post">
+        {% csrf_token %}
+        <label for="username">用戶名稱:</label>
+        <input type="text" name="username" id="username"> <br />
+        <label for="password">用戶密碼:</label>
+        <input type="password" name="password" id="password"> <br />
+        <input type="submit" value="登入" />
+    </form>
+</body>
+
 </html>

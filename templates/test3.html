@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>客服前台</title>
+    <script>
+        const button = document.querySelector('subBtn');
+        function doReset() {
+            document.helpUser.action = '{% url "resetpwd" %}';
+            subBtn.disabled = false;
+            document.helpUser.method = 'post';
+        }
+        function doUnlock() {
+            document.helpUser.action = '{% url "unlock" %}';
+            subBtn.disabled = false;
+            document.helpUser.method = 'post';
+        }
+        function doFindName() {
+            document.helpUser.action = '{% url "forgetusername" %}';
+            subBtn.disabled = false;
+            document.helpUser.method = 'post';
+        }
+        function doCheck() {
+            document.helpUser.action = '{% url "checkaccount" %}';
+            subBtn.disabled = false;
+            document.helpUser.method = 'post';
+        }
+        function doTest() {
+            document.helpUser.action = 'https://www.google.com';
+            subBtn.disabled = false;
+            document.helpUser.method = 'get';
+        }
+    </script>
+    <style>
+        table,
+        th,
+        td {
+            border: 1px solid white;
+            border-collapse: collapse;
+        }
+    </style>
+</head>
+
+<body>
+    {% if not user.is_authenticated %}
+    <h1>尚未登入</h1>
+    {%else%}
+    <a class="btn btn-lg btn-primary" href="{% url 'logout' %}" role="button" align="right"
+        style="background-color:rgb(233, 255, 193);">
+        <h3>登出</h3>
+    </a>
+    <!-- <div>request: </div>
+    <div>{{request.user}}</div>
+    <div>request-username: </div>
+    <div>{{request.user.username}}</div>
+    <div>user: </div>
+    <div>{{user.username}}</div>
+
+    <div>can_reset_password: </div>
+    <div>{{request.user.can_reset_password}}</div>
+
+    <div>can_unlock: </div>
+    <div>{{request.user.can_unlock}}</div>
+
+    <div>can_search_username: </div>
+    <div>{{request.user.can_search_username}}</div>
+
+    <div>can_check_status: </div>
+    <div>{{request.user.can_check_status}}</div> -->
+
+    {%if data.show%}
+    <div style="background-color:LightGray;" align="center">
+        <h2>結果</h2>
+        <!-- 錯誤狀態 -->
+        {% if data.is_error %}
+        <div>執行錯誤</div>
+        <div>錯誤資訊:{{data.message}}</div>
+        <div>資訊內容:{{data.data}}</div>
+        <!-- 正確狀態 -->
+        {% else %}
+        <div>{{data.message}}</div>
+        <div>{{data.data}}</div>
+        {%endif%}
+        <br>
+        <br>
+    </div>
+    {%endif%}
+    <!-- 客服操作部分 -->
+    <div style="background-color:rgb(167, 238, 232);">
+        <form action="" method="post" name="helpUser" align="center">
+            {% csrf_token %}
+            <table align="center">
+                <thead>
+                    <tr>
+                        <h1>會員資料操作</h1>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <label>帳號</label>
+                        </td>
+                        <td>
+                            <input type="text" name="username" value="">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>身分證</label>
+                        </td>
+                        <td>
+                            <input type="text" name="id_card" value="">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>生日</label>
+                        </td>
+                        <td>
+                            <input type="text" name="date_of_birth" value="">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>手機</label>
+                        </td>
+                        <td>
+                            <input type="text" name="mobile_number" value="">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            {% if request.user.can_reset_password %}
+            <input type="radio" name="chooseToDo" id="r0" onclick="doReset();">
+            <label for="r0">重製密碼</label>
+            <br>
+            {% endif %}
+
+            {% if request.user.can_unlock %}
+            <input type="radio" name="chooseToDo" id="r1" onclick="doUnlock();">
+            <label for="r1">解鎖帳號</label>
+            <br>
+            {% endif %}
+
+            {% if request.user.can_search_username %}
+            <input type="radio" name="chooseToDo" id="r2" onclick="doFindName();">
+            <label for="r2">查詢帳號</label>
+            <br>
+            {% endif %}
+
+            {% if request.user.can_check_status %}
+            <input type="radio" name="chooseToDo" id="r3" onclick="doCheck();">
+            <label for="r3">開戶狀態</label>
+            <br>
+            {% endif %}
+
+            <input type="radio" name="chooseToDo" id="r4" onclick="doTest();">
+            <label for="r4">Google</label>
+            <br>
+
+            <input type="submit" name="subBtn" id="subBtn" value="送出提交" disabled>
+        </form>
+    </div>
+    <br>
+    <!-- 新增客服 -->
+    <form action="{%url 'newStaff' %}" method="post" style="background-color:rgb(219, 250, 193);" align="center">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    新增員工
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        帳號
+                    </td>
+                    <td>
+                        密碼
+                    </td>
+                    <td>
+                        身分證
+                    </td>
+                    <td>
+                        手機號碼
+                    </td>
+                    <td>
+                        權限等級<br>(最高{{user.authority|add:1}})
+                    </td>
+                    <td>
+                        可否重置密碼
+                    </td>
+                    <td>
+                        可否解鎖
+                    </td>
+                    <td>
+                        可否查帳號
+                    </td>
+                    <td>
+                        可否查狀態
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" name="username" value="" required>
+                    </td>
+                    <td>
+                        <input type="text" name="password" value="" required>
+                    </td>
+                    <td>
+                        <input type="text" name="IdCard" value="" required>
+                    </td>
+                    <td>
+                        <input type="text" name="phoneNumber" value="" required>
+                    </td>
+                    <td>
+                        <input type="text" name="authority" value="" size="5" required>
+                    </td>
+                    <td>
+                        <input type="checkbox" name="can_reset_password">
+                    </td>
+                    <td>
+                        <input type="checkbox" name="can_unlock">
+                    </td>
+                    <td>
+                        <input type="checkbox" name="can_search_username">
+                    </td>
+                    <td>
+                        <input type="checkbox" name="can_check_status">
+                    </td>
+                </tr>
+            </tbody>
+            <button type="submit">新增</button>
+        </table>
+    </form>
+
+    <!-- 客服權限控制部分 -->
+    {% if iusers%}
+    <div style="background-color:rgb(205, 214, 240);" align="center">
+        <table>
+            <thead>
+                <tr>
+                    <h1>客服人員管控</h1>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        帳號
+                    </td>
+                    <td>
+                        身分證
+                    </td>
+                    <td>
+                        手機
+                    </td>
+                    <td>
+                        權限等級
+                    </td>
+                    {% if request.user.can_reset_password %}
+                    <td>
+                        權限:重置密碼
+                    </td>
+                    {% endif %}
+                    {% if request.user.can_unlock %}
+                    <td>
+                        權限:解鎖
+                    </td>
+                    {% endif %}
+                    {% if request.user.can_search_username %}
+                    <td>
+                        權限:找帳號
+                    </td>
+                    {% endif %}
+                    {% if request.user.can_check_status %}
+                    <td>
+                        權限:查看
+                    </td>
+                    {% endif %}
+                    <td>
+                        修改 (1筆/次)
+                    </td>
+                </tr>
+                {% for iuser in iusers %}
+                <tr>
+                    {%if iuser.authority > user.authority %}
+                    <form action=" {%url 'change'%} " method="post">
+                        {% csrf_token %}
+                        <td>
+                            {{iuser.username}}
+                            <input type="hidden" name="username" value={{iuser.username}}>
+                        </td>
+                        <td>
+                            {{iuser.IdCard}}
+                        </td>
+                        <td>
+                            {{iuser.phoneNumber}}
+                        </td>
+                        <td>
+                            <!-- {{iuser.authority}} -->
+                            <input type="text" name="authority" value={{iuser.authority}} size="3" readonly>
+                        </td>
+                        {% if request.user.can_reset_password %}
+                        <td>
+                            {%if iuser.can_reset_password%}
+                            <input type="checkbox" name="can_reset_password" checked="checked">
+                            {%else%}
+                            <input type="checkbox" name="can_reset_password">
+                            {%endif%}
+                        </td>
+                        {% endif %}
+                        {% if request.user.can_unlock %}
+                        <td>
+                            {%if iuser.can_unlock%}
+                            <input type="checkbox" name="can_unlock" checked="checked">
+                            {%else%}
+                            <input type="checkbox" name="can_unlock">
+                            {%endif%}
+                        </td>
+                        {% endif %}
+                        {% if request.user.can_search_username %}
+                        <td>
+                            {%if iuser.can_search_username%}
+                            <input type="checkbox" name="can_search_username" checked="checked">
+                            {%else%}
+                            <input type="checkbox" name="can_search_username">
+                            {%endif%}
+                        </td>
+                        {% endif %}
+                        {% if request.user.can_check_status %}
+                        <td>
+                            {%if iuser.can_check_status%}
+                            <input type="checkbox" name="can_check_status" checked="checked">
+                            {%else%}
+                            <input type="checkbox" name="can_check_status">
+                            {%endif%}
+                        </td>
+                        {% endif %}
+                        <td>
+                            <button type="submit">修改單筆</button>
+                        </td>
+                    </form>
+                </tr>
+                {%endif%}
+                {%endfor%}
+            </tbody>
+        </table>
+    </div>
+    {%endif%}
+    {%endif%}
+</body>
+
+</html>

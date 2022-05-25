@@ -15,10 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
 import ServiceApp
 
-urlpatterns = [            
+urlpatterns = [
     path('admin/', admin.site.urls),
-    path('ServiceApp/', include('ServiceApp.urls'))
+    # 引導到客服端
+    path('serviceapp/', include('ServiceApp.urls'))
 ]

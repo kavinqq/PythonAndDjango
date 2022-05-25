@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-mh@0atm=px*fzflmq($m-pj()p=!hiy%#+8b1(feou&u$v5uj-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -129,4 +129,3 @@ AUTH_USER_MODEL = "ServiceApp.Staff"
 
 # 如果沒有登入重新導向登入頁面
 LOGIN_URL = 'input'
-
