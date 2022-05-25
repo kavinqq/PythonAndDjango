@@ -60,16 +60,18 @@ class LoginView(APIView):
         data = request.data
         serializers = StaffLoginSerializers(data = data)
 
-        if serializers.is_valid():            
-            try:
-                # 撈出對應名稱的資料
-                DbData = Staff.objects.get(username = data['username'])
-            except Exception as e:
-                print("無效的使用者名稱")
-                return HttpResponseRedirect('/serviceapp/input/')
-        else :
+        if not serializers.is_valid():   
             print("登入資料格式錯誤")
-            return HttpResponseRedirect('/serviceapp/input/')
+            return HttpResponseRedirect('/serviceapp/input/')         
+        #     try:
+        #         # 撈出對應名稱的資料
+        #         DbData = Staff.objects.get(username = data['username'])
+        #     except Exception as e:
+        #         print("無效的使用者名稱")
+        #         return HttpResponseRedirect('/serviceapp/input/')
+        # else :
+        #     print("登入資料格式錯誤")
+        #     return HttpResponseRedirect('/serviceapp/input/')
 
         data = serializers.validated_data
         print("驗證帳密")
@@ -252,16 +254,18 @@ class TestTimes2():
     def add():
         TestTimes2.test_times = TestTimes2.test_times + 1
 
+
+#測試用 小def
 def igc1(request):
     start = time.time()
     TestTimes.add()
     payload = json.dumps({
         "username": '',
         "id_card": 'A123456789',
-        "date_of_birth": '2022-05-20',
-        "mobile_number": '0987654320',            
+        "date_of_birth": '2022-05-23',
+        "mobile_number": '0987654321',            
     })
-    times=10
+    times=1
     for i in range(times):
         r = requests.request("POST", RestPwdUrl, headers = JsonHeaders, data = payload)
         TestTimes2.add()
@@ -272,6 +276,7 @@ def igc1(request):
                         最終內容:{r.text}')
 
 
+#測試用小class
 class IGC0View(APIView):
     def get(self,request):
         data0 = { #request的headers
