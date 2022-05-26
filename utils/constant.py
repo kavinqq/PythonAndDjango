@@ -20,5 +20,5 @@ ForgetUserNameUrl = SSOIP + 'app1/forgetusername/'
 
 CheckAccountUrl = SSOIP + 'app1/checkaccount/'
 
-indexHtml='test3.html'
+indexHtml = 'test3.html'
 

@@ -10,7 +10,7 @@ class StaffLoginSerializers(serializers.Serializer):
 class AddStaffSerializers(serializers.ModelSerializer):
     class Meta:
         model = Staff
-        fields = ('username','password','IdCard','phoneNumber','authority','can_reset_password','can_unlock','can_search_username','can_check_status')
+        fields = ('username', 'password', 'IdCard', 'phoneNumber', 'authority', 'can_reset_password', 'can_unlock', 'can_search_username', 'can_check_status')
 
 
 # 用戶輸入驗證資料用
@@ -25,9 +25,9 @@ class UserDataSerializers(serializers.Serializer):
 # 回傳資料用
 class RetrieveDataSerializers(serializers.Serializer):
 
-    code = serializers.CharField(allow_blank = True,allow_null = True)
-    message = serializers.CharField(allow_blank = True,allow_null = True)
-    data = serializers.CharField(allow_blank = True,allow_null = True)
+    code = serializers.CharField(allow_blank = True, allow_null = True)
+    message = serializers.CharField(allow_blank = True, allow_null = True)
+    data = serializers.CharField(allow_blank = True, allow_null = True)
 
 
 #修改權限用
@@ -35,7 +35,7 @@ class PermissionSerializers(serializers.ModelSerializer):
     username = serializers.CharField()
     class Meta:
         model = Staff
-        fields = ('username','authority','can_reset_password','can_unlock','can_search_username','can_check_status')
+        fields = ('username', 'authority', 'can_reset_password', 'can_unlock', 'can_search_username', 'can_check_status')
 
 #test---------------------------------------------------------------------------------------------------------------------------
 
@@ -44,4 +44,4 @@ class IGCSerializers(serializers.ModelSerializer):
     username = serializers.CharField()
     class Meta:
         model = Staff
-        fields = ('username','password')
+        fields = ('username', 'password')

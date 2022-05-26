@@ -3,7 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>客服前台</title>
+    <title>
+        客服前台
+    </title>
     <script>
         const button = document.querySelector('subBtn');
         function doReset() {
@@ -43,8 +45,10 @@
 </head>
 
 <body>
+
     {% if not user.is_authenticated %}
     <h1>尚未登入</h1>
+    <a href="{% url 'input' %}">前往登入</a>
     {%else%}
     <a class="btn btn-lg btn-primary" href="{% url 'logout' %}" role="button" align="right"
         style="background-color:rgb(233, 255, 193);">
@@ -69,7 +73,7 @@
     <div>can_check_status: </div>
     <div>{{request.user.can_check_status}}</div> -->
 
-    {%if data.show%}
+    {%if data.message %}
     <div style="background-color:LightGray;" align="center">
         <h2>結果</h2>
         <!-- 錯誤狀態 -->
