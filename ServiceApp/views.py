@@ -17,12 +17,12 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework import status
 
-from utils.constant import RestPwdUrl, JsonHeaders, UnlockUrl, ForgetUserNameUrl, CheckAccountUrl, indexHtml
 from datetime import datetime
 
 from .models import Staff
 from .serializers import *
 from global_settings.enums import *
+from utils.constant import *
 
 # 新增員工
 @method_decorator(login_required, name = 'post')
@@ -36,32 +36,21 @@ class NewStaffView(GenericAPIView):
         serializer = self.serializer_class(data = data)
 
         # 驗證資料
-        if not serializer.is_valid(raise_exception = True):
-            ddata = CodeMessageEnum.ADD_NEW_EMPLOYEE_FAILED.to_dict()
-            ddata.update(dict(data = '', is_error = CodeMessageEnum.ADD_NEW_EMPLOYEE_FAILED.is_error()))
-            return render(request, indexHtml, {
-                        'data': ddata,
-                        'iusers': Staff.objects.all()
-            })
+        if not serializer.is_valid():
+            parameter = {
+                'data': CodeMessageEnum.ADD_NEW_EMPLOYEE_FAILED.to_dict(),
+                'iusers': Staff.objects.all()
+            }
+            return render(request, indexHtml, parameter)    #驗證傳入的資料失敗 return
 
         data = serializer.validated_data
-        user = Staff.objects.create(
-            username = data.get('username'),
-            password = data.get('password'),
-            IdCard = data.get('IdCard'),
-            phoneNumber = data.get('phoneNumber'),
-            authority = data.get('authority'),
-            can_reset_password = data.get('can_reset_password'),
-            can_unlock = data.get('can_unlock'),
-            can_search_username = data.get('can_search_username'),
-            can_check_status = data.get('can_check_status'),
-        )
-        ddata = CodeMessageEnum.ADD_NEW_EMPLOYEE_SUCCESS.to_dict()
-        ddata.update(dict(data = '', is_error = CodeMessageEnum.ADD_NEW_EMPLOYEE_FAILED.is_error()))
-        return render(request,indexHtml,{
-                    'data': ddata,
-                    'iusers': Staff.objects.all()
-        })
+        #在model創建rowdata的好方法
+        Staff.objects.create(**data)
+        parameter = {
+            'data': CodeMessageEnum.ADD_NEW_EMPLOYEE_SUCCESS.to_dict(),
+            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
+        }
+        return render(request, indexHtml, parameter)    #驗證傳入的資料成功 return
 
 
 """
@@ -74,15 +63,10 @@ class ControlPostView(APIView):
         data = rdata.data
         serializer = UserDataSerializers(data, data)
         if not serializer.is_valid():
-            res = CodeMessageEnum.VALIDATION_ERROR.to_dict()
-            res.update(dict(data = serializer.error_messages, is_error = CodeMessageEnum.VALIDATION_ERROR.is_error()))
-            return res
-            # return {'show':True,'is_error':True,'code': 801,'message': '資料格式(待傳輸)驗證錯誤','data':serializer.error_messages}
+            return CodeMessageEnum.VALIDATION_FAILED.to_dict(serializer.error_messages) #傳入的資料格式驗證錯誤 return
+
         data = serializer.validated_data
-        res = CodeMessageEnum.VALIDATION_SUCCESS.to_dict()
-        res.update(dict(data = data, is_error = CodeMessageEnum.VALIDATION_SUCCESS.is_error()))
-        return res
-        # return {'show':False,'is_error':False,'code': 701,'message': '資料格式(待傳輸)驗證通過','data':data}
+        return CodeMessageEnum.VALIDATION_SUCCESS.to_dict(data) #傳入資料驗證正確 return
 
     #radata 接收 dict
     def sent_receive_serializer(self, rdata, url_to_sent):
@@ -101,34 +85,27 @@ class ControlPostView(APIView):
         #解析資料
         if response.status_code != 200:
             print(CodeMessageEnum.CONNECT_TO_SSO_FAILED.message)
-            res = CodeMessageEnum.CONNECT_TO_SSO_FAILED.to_dict()
-            res.update(dict(data = response.text, is_error = CodeMessageEnum.CONNECT_TO_SSO_FAILED.is_error()))
-            return res
-            # return {'show':True,'is_error':True,'code': 802,'message': '連線SSO出問題','data':response.text}
+            return CodeMessageEnum.CONNECT_TO_SSO_FAILED.to_dict(response.text) #連線到SSO失敗 return
+
         response = json.loads(response.text)
-        result = RetrieveDataSerializers(data=response)
+        result = RetrieveDataSerializers(data = response)
 
         if not result.is_valid():
             print(CodeMessageEnum.RECEIVE_DATA_VALID_FAILED.message)
-            res = CodeMessageEnum.RECEIVE_DATA_VALID_FAILED.to_dict()
-            res.update(dict(data = result.error_messages, is_error = CodeMessageEnum.RECEIVE_DATA_VALID_FAILED.is_error()))
-            return res
-            # return {'show':True,'is_error':True,'code': 803,'message': '資料格式(接收)驗證錯誤','data':result.error_messages}
+            return CodeMessageEnum.RECEIVE_DATA_VALID_FAILED.to_dict(result.error_messages) #從SSO回傳的資料格式驗證錯誤 return
 
         valid_result = result.validated_data
-        res = {'code': valid_result['code'], 'message': valid_result['message'], 'data': valid_result['data'], 'is_error': False}
-        return res
-        # return {'show':True,'is_error':False,'code': valid_result['code'],'message': valid_result['message'],'data':valid_result['data']}
+        return {**valid_result, 'is_error': False}  #回傳資料驗證成功 return
 
     def short_do(self, request, url_to_exe):
         data0 = self.serializer_before_sent(request)
         print(data0)
         if data0.get('is_error'):
             print('待傳資料 驗證錯誤')
-            return data0
+            return data0    #傳出前階段發生錯誤 return
         else:
             data = self.sent_receive_serializer(data0.get('data'), url_to_exe)
-            return data
+            return data     #把接收資料後的結果回傳 return
 
 """
 APIView 父類別 end--------------------------
@@ -145,7 +122,7 @@ class RestPasswordView(ControlPostView):
         # return redirect('/serviceapp/index/',permanent=True, data=data0,iusers=Staff.objects.all())
         return render(request, indexHtml, {
             'data': self.short_do(request, RestPwdUrl),
-            'iusers': Staff.objects.all()
+            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
         })
 
 
@@ -154,7 +131,7 @@ class UnlockView(ControlPostView):
     def post(self, request):
         return render(request, indexHtml, {
             'data': self.short_do(request, UnlockUrl),
-            'iusers': Staff.objects.all()
+            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
         }) 
 
 
@@ -163,7 +140,7 @@ class ForgetUsernameView(ControlPostView):
     def post(self, request):
         return render(request, indexHtml, {
             'data': self.short_do(request, ForgetUserNameUrl),
-            'iusers': Staff.objects.all()
+            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
         })
 
 
@@ -172,7 +149,7 @@ class CheckAccountView(ControlPostView):
     def post(self, request):
         return render(request, indexHtml, {
             'data': self.short_do(request, CheckAccountUrl),
-            'iusers': Staff.objects.all()
+            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
         })
 #重構end-----------------------
 
@@ -186,37 +163,26 @@ def page_to_login(request):
 class LoginView(APIView):
 
     def post(self, request):
-        print('start login post')
+        print('start login')
 
         data = request.data
         serializers = StaffLoginSerializers(data = data)
 
         if not serializers.is_valid():
             print('登入資料格式錯誤')
-            return HttpResponseRedirect('/serviceapp/input/')
-        #     try:
-        #         # 撈出對應名稱的資料
-        #         DbData = Staff.objects.get(username = data['username'])
-        #     except Exception as e:
-        #         print('無效的使用者名稱')
-        #         return HttpResponseRedirect('/serviceapp/input/')
-        # else :
-        #     print('登入資料格式錯誤')
-        #     return HttpResponseRedirect('/serviceapp/input/')
+            return HttpResponseRedirect('/serviceapp/input/')   #輸入的格式錯誤 return
 
         data = serializers.validated_data
-        print('驗證帳密')
         user = authenticate(request, username = data.get('username'), password = data.get('password'))
         dbuser = Staff.objects.get(username = data.get('username'))
-        print(f'check pwd = {dbuser.check_password(data.get("password"))}')
         
-        if user:
-            print('成功')
-            login(request, user)
-            return redirect('/serviceapp/index/')
-        else:
+        if not user:
             print('失敗')
-            return HttpResponseRedirect('/serviceapp/input/')
+            return HttpResponseRedirect('/serviceapp/input/')   #帳密錯誤 return
+
+        print('成功')
+        login(request, user)
+        return redirect('/serviceapp/index/')   #成功登入 return
 
 
 #登出
@@ -297,11 +263,7 @@ def Test(request):
         return HttpResponse('錯誤')
 
 
-#測試網頁
-def Test3(request):
-    return render(request,indexHtml,{})
-
-
+#igc
 class IGCView(GenericAPIView):
     serializer_class = IGCSerializers
     def post(self, request):
@@ -332,7 +294,7 @@ class TestTimes2():
         TestTimes2.test_times = TestTimes2.test_times+1
 
 
-#測試用 小def
+#igc1
 def igc1(request):
     start = time.time()
     TestTimes.add()
@@ -351,7 +313,7 @@ def igc1(request):
             f'第{TestTimes.test_times}次惡作劇<br>\
             傳送了{TestTimes2.test_times}次<br>\
             結束時間為{datetime.now().strftime("%H:%M:%S")}<br>\
-            耗時:{format(time.time()-start)}<br>\
+            耗時:{format(time.time() - start)}<br>\
             最終內容:<br>\
             {r.text}<br>\
             <br>\
@@ -363,14 +325,21 @@ def igc1(request):
     ) #Content-Type
 
 
-#測試用 小def2
+#igc2
 def igc2(request):
-    print((type(CodeMessageEnum.UNEXCEPTED_ERROR.to_dict())))
-    a = CodeMessageEnum.UNEXCEPTED_ERROR.to_dict()
-    return HttpResponse(f'{CodeMessageEnum(a.get("code")).is_error()}')
+    dic={
+        'a': None,
+        'b': ''
+    }
+    return HttpResponse(dic)
+
+#igc3
+class IGC3View(APIView):
+    def get(self,request):
+        return Response(CodeMessageEnum(640).to_dict())
 
 
-#測試用小class
+#igc0
 class IGC0View(APIView):
     def get(self, request):
         print('>-----------------------------------<')

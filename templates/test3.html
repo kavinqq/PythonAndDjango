@@ -46,10 +46,10 @@
 
 <body>
 
-    {% if not user.is_authenticated %}
+    {% if not request.user.is_authenticated %}
     <h1>尚未登入</h1>
     <a href="{% url 'input' %}">前往登入</a>
-    {%else%}
+    {% else %}
     <a class="btn btn-lg btn-primary" href="{% url 'logout' %}" role="button" align="right"
         style="background-color:rgb(233, 255, 193);">
         <h3>登出</h3>
@@ -73,7 +73,7 @@
     <div>can_check_status: </div>
     <div>{{request.user.can_check_status}}</div> -->
 
-    {%if data.message %}
+    {% if data.message %}
     <div style="background-color:LightGray;" align="center">
         <h2>結果</h2>
         <!-- 錯誤狀態 -->
@@ -84,12 +84,14 @@
         <!-- 正確狀態 -->
         {% else %}
         <div>{{data.message}}</div>
+        {% if data.data %}
         <div>{{data.data}}</div>
-        {%endif%}
+        {% endif %}
+        {% endif %}
         <br>
         <br>
     </div>
-    {%endif%}
+    {% endif %}
     <!-- 客服操作部分 -->
     <div style="background-color:rgb(167, 238, 232);">
         <form action="" method="post" name="helpUser" align="center">
@@ -168,9 +170,10 @@
     </div>
     <br>
     <!-- 新增客服 -->
-    <form action="{%url 'newStaff' %}" method="post" style="background-color:rgb(219, 250, 193);" align="center">
+    {% if request.user.can_new_employee %}
+    <form action="{% url 'newStaff' %}" method="post" style="background-color:rgb(219, 250, 193);" align="center">
         {% csrf_token %}
-        <table>
+        <table align="center">
             <thead>
                 <tr>
                     新增員工
@@ -193,6 +196,11 @@
                     <td>
                         權限等級<br>(最高{{user.authority|add:1}})
                     </td>
+                    {% if request.user.can_new_employee %}
+                    <td>
+                        可否新增員工
+                    </td>
+                    {% endif %}
                     <td>
                         可否重置密碼
                     </td>
@@ -208,20 +216,25 @@
                 </tr>
                 <tr>
                     <td>
-                        <input type="text" name="username" value="" required>
+                        <input type="text" name="username" value="" size="10" required>
                     </td>
                     <td>
-                        <input type="text" name="password" value="" required>
+                        <input type="text" name="password" value="" size="10" required>
                     </td>
                     <td>
-                        <input type="text" name="IdCard" value="" required>
+                        <input type="text" name="IdCard" value="" size="10" required>
                     </td>
                     <td>
-                        <input type="text" name="phoneNumber" value="" required>
+                        <input type="text" name="phone_number" value="" size="10" required>
                     </td>
                     <td>
                         <input type="text" name="authority" value="" size="5" required>
                     </td>
+                    {% if request.user.can_new_employee %}
+                    <td>
+                        <input type="checkbox" name="can_new_employee">
+                    </td>
+                    {% endif %}
                     <td>
                         <input type="checkbox" name="can_reset_password">
                     </td>
@@ -239,9 +252,10 @@
             <button type="submit">新增</button>
         </table>
     </form>
+    {% endif %}
 
     <!-- 客服權限控制部分 -->
-    {% if iusers%}
+    {% if iusers %}
     <div style="background-color:rgb(205, 214, 240);" align="center">
         <table>
             <thead>
@@ -263,6 +277,11 @@
                     <td>
                         權限等級
                     </td>
+                    {% if request.user.can_new_employee %}
+                    <td>
+                        權限:新增員工
+                    </td>
+                    {% endif %}
                     {% if request.user.can_reset_password %}
                     <td>
                         權限:重置密碼
@@ -289,8 +308,8 @@
                 </tr>
                 {% for iuser in iusers %}
                 <tr>
-                    {%if iuser.authority > user.authority %}
-                    <form action=" {%url 'change'%} " method="post">
+                    {% if iuser.authority > request.user.authority %}
+                    <form action=" {% url 'change' %} " method="post">
                         {% csrf_token %}
                         <td>
                             {{iuser.username}}
@@ -300,60 +319,73 @@
                             {{iuser.IdCard}}
                         </td>
                         <td>
-                            {{iuser.phoneNumber}}
+                            {{iuser.phone_number}}
                         </td>
-                        <td>
+                        <td align="center">
                             <!-- {{iuser.authority}} -->
                             <input type="text" name="authority" value={{iuser.authority}} size="3" readonly>
                         </td>
+                        {% if request.user.can_new_employee %}
+                        <td align="center">
+                            {% if iuser.can_new_employee %}
+                            <input type="checkbox" name="can_new_employee" checked="checked">
+                            {% else %}
+                            <input type="checkbox" name="can_new_employee">
+                            {% endif %}
+                        </td>
+                        {% endif %}
+
                         {% if request.user.can_reset_password %}
-                        <td>
-                            {%if iuser.can_reset_password%}
+                        <td align="center">
+                            {% if iuser.can_reset_password %}
                             <input type="checkbox" name="can_reset_password" checked="checked">
-                            {%else%}
+                            {% else %}
                             <input type="checkbox" name="can_reset_password">
-                            {%endif%}
+                            {% endif %}
                         </td>
                         {% endif %}
+
                         {% if request.user.can_unlock %}
-                        <td>
-                            {%if iuser.can_unlock%}
+                        <td align="center">
+                            {% if iuser.can_unlock %}
                             <input type="checkbox" name="can_unlock" checked="checked">
-                            {%else%}
+                            {% else %}
                             <input type="checkbox" name="can_unlock">
-                            {%endif%}
+                            {% endif %}
                         </td>
                         {% endif %}
+
                         {% if request.user.can_search_username %}
-                        <td>
-                            {%if iuser.can_search_username%}
+                        <td align="center">
+                            {% if iuser.can_search_username %}
                             <input type="checkbox" name="can_search_username" checked="checked">
-                            {%else%}
+                            {% else %}
                             <input type="checkbox" name="can_search_username">
-                            {%endif%}
+                            {% endif %}
                         </td>
                         {% endif %}
+
                         {% if request.user.can_check_status %}
-                        <td>
-                            {%if iuser.can_check_status%}
+                        <td align="center">
+                            {% if iuser.can_check_status %}
                             <input type="checkbox" name="can_check_status" checked="checked">
-                            {%else%}
+                            {% else %}
                             <input type="checkbox" name="can_check_status">
-                            {%endif%}
+                            {% endif %}
                         </td>
                         {% endif %}
-                        <td>
+                        <td align="center">
                             <button type="submit">修改單筆</button>
                         </td>
                     </form>
                 </tr>
-                {%endif%}
-                {%endfor%}
+                {% endif %}
+                {% endfor %}
             </tbody>
         </table>
     </div>
-    {%endif%}
-    {%endif%}
+    {% endif %}
+    {% endif %}
 </body>
 
 </html>
