@@ -1,49 +1,62 @@
-from enum import Enum
-
 from ServiceApp.models import *
 
-class ServiceResponse(Enum):
-
-    success = 0
-    noData = 1
-    fail = 2
-
 # request json header
-JsonHeaders = {'Content-Type': 'application/json'}
+JSON_HEADERS = {'Content-Type': 'application/json'}
 
 # SSO API URL
-SSOIP =  'http://10.66.200.53:8000/'
+SSO_IP =  'http://10.66.200.53:8000/'
 
-RestPwdUrl = SSOIP + 'app1/resetpwd/'
+# RestPwdUrl = SSOIP + 'app1/resetpwd/'
+# UnlockUrl = SSOIP + 'app1/unlock/'
+# ForgetUserNameUrl = SSOIP + 'app1/forgetusername/'
+# CheckAccountUrl = SSOIP + 'app1/checkaccount/'
 
-UnlockUrl = SSOIP + 'app1/unlock/'
-
-ForgetUserNameUrl = SSOIP + 'app1/forgetusername/'
-
-CheckAccountUrl = SSOIP + 'app1/checkaccount/'
-
-indexHtml = 'test3.html'
-
-def get_url(key):
+def get_sso_url(key):
+    '''
+    取得連線到sso的url
+    '''
     data = {
-        'RestPwdUrl': 'app1/resetpwd/',
-        'UnlockUrl': 'app1/unlock/',
-        'ForgetUserNameUrl': 'app1/forgetusername/',
-        'CheckAccountUrl': 'app1/checkaccount/',
+        'reset_pwd': 'app1/resetpwd/',
+        'unlock': 'app1/unlock/',
+        'find_username': 'app1/forgetusername/',
+        'check_account': 'app1/checkaccount/',
     }
+    return SSO_IP + data.get(key)
 
-    return SSOIP + data.get(key)
+INDEX_HTML = 'test3.html'
 
 
 class get_users(object):
-    def gt(self,user):
+    '''
+    依照不同發法取得其他的員工資料
+    '''
+
+    def gt(user):
+        '''
+        取得的其他員工 權限數字比該使用者 大
+        '''
         return Staff.objects.filter(authority__gt = user.authority)
 
-    def gte(self,user):
+    def gte(user):
+        '''
+        取得的其他員工 權限數字比該使用者 大.相等
+        '''
         return Staff.objects.filter(authority__gte = user.authority)
 
-    def lt(self,user):
+    def lt(user):
+        '''
+        取得的其他員工 權限數字比該使用者 小
+        '''
         return Staff.objects.filter(authority__lt = user.authority)
 
-    def lte(self,user):
+    def lte(user):
+        '''
+        取得的其他員工 權限數字比該使用者 小.相等
+        '''
         return Staff.objects.filter(authority__lte = user.authority)
+    
+    def all():
+        '''
+        回傳全部員工
+        '''
+        return Staff.objects.all()

@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser
 
 # 用來記錄 客服員工資料
 class Staff(AbstractUser):
+    '''
+    員工資料
+    '''
     IdCard = models.CharField(max_length = 100, verbose_name = '身分證', help_text = '身分證')
     phone_number = models.CharField(max_length = 100, verbose_name = '手機號碼', help_text = '手機號碼')
     authority = models.IntegerField(default = 10, verbose_name = '權限', help_text = '數字越小 權限越大 superuser = -1')

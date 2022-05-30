@@ -10,7 +10,7 @@ class StaffLoginSerializers(serializers.Serializer):
 class AddStaffSerializers(serializers.ModelSerializer):
     class Meta:
         model = Staff
-        fields = ('username', 'password', 'IdCard', 'phoneNumber', 'authority', 'can_reset_password', 'can_unlock', 'can_search_username', 'can_check_status')
+        fields = ('username', 'password', 'IdCard', 'phone_number', 'authority', 'can_reset_password', 'can_unlock', 'can_search_username', 'can_check_status')
 
 
 # 用戶輸入驗證資料用

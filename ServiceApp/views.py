@@ -1,17 +1,15 @@
+from operator import index
 import requests
 import json
 import time
 
 from django.conf import settings
-#TODO
 from django.http import HttpResponse, HttpResponseRedirect
-#TODO
 from django.shortcuts import redirect, render
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 
-#TODO
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
@@ -24,9 +22,11 @@ from .serializers import *
 from global_settings.enums import *
 from utils.constant import *
 
-# 新增員工
 @method_decorator(login_required, name = 'post')
 class NewStaffView(GenericAPIView):
+    '''
+    新增員工
+    '''
 
     serializer_class = AddStaffSerializers
 
@@ -37,28 +37,32 @@ class NewStaffView(GenericAPIView):
 
         # 驗證資料
         if not serializer.is_valid():
-            parameter = {
-                'data': CodeMessageEnum.ADD_NEW_EMPLOYEE_FAILED.to_dict(),
-                'iusers': Staff.objects.all()
-            }
-            return render(request, indexHtml, parameter)    #驗證傳入的資料失敗 return
+            StoreData.put(CodeMessageEnum.ADD_NEW_EMPLOYEE_FAILED.to_dict())
+            return redirect('index')    #驗證傳入的資料失敗 return
 
         data = serializer.validated_data
         #在model創建rowdata的好方法
-        Staff.objects.create(**data)
-        parameter = {
-            'data': CodeMessageEnum.ADD_NEW_EMPLOYEE_SUCCESS.to_dict(),
-            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
-        }
-        return render(request, indexHtml, parameter)    #驗證傳入的資料成功 return
+        user = Staff.objects.create(**data)
+        user.set_password(data.get('password'))
+        user.save()
+
+        StoreData.put(CodeMessageEnum.ADD_NEW_EMPLOYEE_SUCCESS.to_dict())
+        return redirect('index')    #驗證傳入的資料成功 return
 
 
 """
 APIView 父類別 start--------------------------
 """
 class ControlPostView(APIView):
+    '''
+    發送前後驗證 + 發送
+    '''
     #rdata 接收 request
     def serializer_before_sent(self,rdata):
+        '''
+        驗證後發送
+        '''
+
         print('start SBS')
         data = rdata.data
         serializer = UserDataSerializers(data, data)
@@ -70,6 +74,10 @@ class ControlPostView(APIView):
 
     #radata 接收 dict
     def sent_receive_serializer(self, rdata, url_to_sent):
+        '''
+        發送並驗證回傳的資料
+        '''
+
         print('start CRS')
         #建立要傳送的資料
         payload = json.dumps({
@@ -80,24 +88,31 @@ class ControlPostView(APIView):
         })
 
         #傳送並接收
-        response = requests.request('POST', url_to_sent, headers = JsonHeaders, data = payload)
+        response = requests.request('POST', url_to_sent, headers = JSON_HEADERS, data = payload)
 
         #解析資料
         if response.status_code != 200:
             print(CodeMessageEnum.CONNECT_TO_SSO_FAILED.message)
-            return CodeMessageEnum.CONNECT_TO_SSO_FAILED.to_dict(response.text) #連線到SSO失敗 return
+            return CodeMessageEnum.CONNECT_TO_SSO_FAILED.to_dict({
+                'httpStatusCode': response.status_code, 'message': response.text
+            }) #連線到SSO失敗 return
 
         response = json.loads(response.text)
         result = RetrieveDataSerializers(data = response)
 
         if not result.is_valid():
-            print(CodeMessageEnum.RECEIVE_DATA_VALID_FAILED.message)
+            print('回傳資料 驗證失敗 \n內容：')
+            print(response)
+            print('內容結束')
             return CodeMessageEnum.RECEIVE_DATA_VALID_FAILED.to_dict(result.error_messages) #從SSO回傳的資料格式驗證錯誤 return
 
         valid_result = result.validated_data
         return {**valid_result, 'is_error': False}  #回傳資料驗證成功 return
 
     def short_do(self, request, url_to_exe):
+        '''
+        
+        '''
         data0 = self.serializer_before_sent(request)
         print(data0)
         if data0.get('is_error'):
@@ -111,52 +126,70 @@ class ControlPostView(APIView):
 APIView 父類別 end--------------------------
 """
 #重構start-----------------------
-#重置密碼
+
+class StoreData(object):
+    '''
+    存放 共用的字典
+    暫時代替 redirect 傳送資料給下一個url用 
+    '''
+    data = dict()
+
+    def put(data):
+        '''
+        放一個暫存內容
+        '''
+        StoreData.data = data
+    
+    def pop():
+        '''
+        丟出內容並清空
+        '''
+        tmp = StoreData.data
+        StoreData.data = dict()
+        return tmp
+
+
 class RestPasswordView(ControlPostView):
+    '''
+    重置密碼
+    '''
     def post(self, request):
         # TODO 做成完成作業後跳轉回 index/
-        # request
-        # data0=self.short_do(request,RestPwdUrl)
-        # print(f"data0={data0}")
-        # return redirect('/serviceapp/index/',kwargs={'data':data0})
-        # return redirect('/serviceapp/index/',permanent=True, data=data0,iusers=Staff.objects.all())
-        return render(request, indexHtml, {
-            'data': self.short_do(request, RestPwdUrl),
-            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
-        })
+        StoreData.put(self.short_do(request, get_sso_url('reset_pwd')))
+        return redirect('index')
 
 
-#解鎖
 class UnlockView(ControlPostView):
+    '''
+    解鎖
+    '''
     def post(self, request):
-        return render(request, indexHtml, {
-            'data': self.short_do(request, UnlockUrl),
-            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
-        }) 
+        StoreData.put(self.short_do(request, get_sso_url('unlock')))
+        return redirect('index')
 
 
-#查帳號
 class ForgetUsernameView(ControlPostView):
+    '''
+    查帳號
+    '''
     def post(self, request):
-        return render(request, indexHtml, {
-            'data': self.short_do(request, ForgetUserNameUrl),
-            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
-        })
+        StoreData.put(self.short_do(request, get_sso_url('find_username')))
+        return redirect('index')
 
 
-#查開戶
 class CheckAccountView(ControlPostView):
+    '''
+    查開戶
+    '''
     def post(self, request):
-        return render(request, indexHtml, {
-            'data': self.short_do(request, CheckAccountUrl),
-            'iusers': Staff.objects.filter(authority__gt = request.user.authority),
-        })
+        StoreData.put(self.short_do(request, get_sso_url('check_account')))
+        return redirect('index')
 #重構end-----------------------
 
 
 # 輸入登入資訊
 def page_to_login(request):
-    return render(request, 'login.html')
+    return render(request, 'login.html')    #開啟登入頁面
 
 
 # 登入
@@ -174,7 +207,7 @@ class LoginView(APIView):
 
         data = serializers.validated_data
         user = authenticate(request, username = data.get('username'), password = data.get('password'))
-        dbuser = Staff.objects.get(username = data.get('username'))
+        # dbuser = Staff.objects.get(username = data.get('username'))
         
         if not user:
             print('失敗')
@@ -188,20 +221,15 @@ class LoginView(APIView):
 #登出
 def logout_user(request):
     logout(request)
-    return HttpResponseRedirect('/serviceapp/input/')
+    return HttpResponseRedirect('/serviceapp/input/')   #回到登入頁面
     
     
-#登入後跳轉
+#打開首頁(登入後跳轉)
 def open_index_page(request):
     user = Staff.objects.get(username = request.user.username)
     if user:
-        return render(request, indexHtml, {
-                    'user': user,
-                    'iusers': Staff.objects.all()
-        })
-    return render(request, indexHtml, {
-                'user':'nononon',
-    })
+        return render(request, INDEX_HTML, {'data': StoreData.pop(), 'iusers': get_users.gt(request.user)})
+    return render(request, INDEX_HTML)
 
 
 #主管修改下屬權限
@@ -211,16 +239,8 @@ class ChangePermissionView(GenericAPIView):
         data = request.data
         serializer = self.serializer_class(data = data)
         if not serializer.is_valid():
-            return render(request, indexHtml, {
-                        'data': {
-                            'show': True,
-                            'is_error': True,
-                            'code': 801,
-                            'message': '資料格式(待傳輸)驗證錯誤',
-                            'data': serializer.error_messages
-                        },
-                        'iusers': Staff.objects.all()
-            })
+            StoreData.put(CodeMessageEnum.VALIDATION_FAILED.to_dict(serializer.error_messages))
+            return redirect('index')    #輸入的格式 驗證錯誤 return
 
         data = serializer.validated_data
         user = Staff.objects.get(username = data.get('username'))
@@ -230,37 +250,13 @@ class ChangePermissionView(GenericAPIView):
         user.can_search_username = data.get('can_search_username')
         user.can_check_status = data.get('can_check_status')
         user.save()
-        return render(request, indexHtml, {
-                    'data': {
-                        'show': False,
-                        'is_error': False,
-                        'code': 705,
-                        'message': '修改成功',
-                        'data': f'已修改使用者:{user.username}'
-                    },
-                    'iusers': Staff.objects.all()
-        })
+
+        StoreData.put(CodeMessageEnum.ADD_NEW_EMPLOYEE_SUCCESS.to_dict(f'已修改使用者:{user.username}'))
+        return redirect('index')    #新增成功 return
 
 
 #test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----
 #test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----test-----
-#Member model get 測試
-@login_required()
-def Test(request):
-
-    # 測試用連結 (連結上面的GenericsAPIViw get() )
-    url = 'http://127.0.0.1:8000/Staff/?username=AAA&manageId=1'
-
-    # 接回傳
-    response = requests.get(url)
-
-    print(f'whats this? {response.status_code}')
-    
-    # 根據傳回來的驗證結果 給予對應提示
-    if response.status_code == status.HTTP_200_OK:
-        return HttpResponse('正確')
-    else:
-        return HttpResponse('錯誤')
 
 
 #igc
@@ -294,6 +290,25 @@ class TestTimes2():
         TestTimes2.test_times = TestTimes2.test_times+1
 
 
+class StoreData0(object):
+    data =dict()
+
+    def put(data0):
+        StoreData0.data = data0
+    
+    def pop():
+        return StoreData0.data
+
+
+def igc4(request):
+    StoreData0.put({'food': 'cake','drink': 'vodka'})
+    return redirect('/serviceapp/igc5/')
+
+
+def igc5(request):
+    return HttpResponse(f'內容是{StoreData0.pop()}')
+
+
 #igc1
 def igc1(request):
     start = time.time()
@@ -306,7 +321,7 @@ def igc1(request):
     })
     times = 1
     for i in range(times):
-        r = requests.request('POST', RestPwdUrl, headers = JsonHeaders, data = payload)
+        r = requests.request('POST', get_sso_url('reset_pwd'), headers = JSON_HEADERS, data = payload)
         TestTimes2.add()
         time.sleep(100/1000)
     return HttpResponse(
@@ -315,13 +330,7 @@ def igc1(request):
             結束時間為{datetime.now().strftime("%H:%M:%S")}<br>\
             耗時:{format(time.time() - start)}<br>\
             最終內容:<br>\
-            {r.text}<br>\
-            <br>\
-            {r.content.decode("utf-8")}<br>\
-            <br>\
-            {r.headers}<br>\
-            <br>\
-            {r.headers.keys()}'
+            {r.text}<br>'
     ) #Content-Type
 
 
@@ -400,3 +409,26 @@ class IGC0View(APIView):
         }
         # return response
         return Response(data0)
+
+
+class TestRedirectView(APIView):
+    '''
+    導向並挾帶私貨給下一個url的app
+    '''
+    def get(self,request):
+        # return Response('hi')
+        return redirect('test_rec_view',
+        code = 22
+    )
+    
+    def wtf_view(self):
+        return Response('code')
+
+
+class TestReciveView(APIView):
+    '''
+    被轉跳的app 並顯示轉跳中的私貨
+    '''
+    def get(self, request, code):
+        code2 = request.GET.get('code')
+        return Response(f'hi {code2}')
