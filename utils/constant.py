@@ -35,7 +35,7 @@ def get_url(key):
     return SSOIP + data.get(key)
 
 
-class get_users_by_authority(object):
+class get_users(object):
     def gt(self,user):
         return Staff.objects.filter(authority__gt = user.authority)
 
