@@ -225,11 +225,9 @@ def logout_user(request):
     
     
 #打開首頁(登入後跳轉)
+@login_required
 def open_index_page(request):
-    user = Staff.objects.get(username = request.user.username)
-    if user:
-        return render(request, INDEX_HTML, {'data': StoreData.pop(), 'iusers': get_users.gt(request.user)})
-    return render(request, INDEX_HTML)
+    return render(request, INDEX_HTML, {'data': StoreData.pop(), 'iusers': get_users.gt(request.user)})
 
 
 #主管修改下屬權限
