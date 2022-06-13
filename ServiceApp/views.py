@@ -1,4 +1,3 @@
-from operator import index
 import requests
 import json
 import time

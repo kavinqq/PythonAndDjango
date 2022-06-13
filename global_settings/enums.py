@@ -1,12 +1,10 @@
 from enum import Enum
 
-IS_ERROR=True
+IS_ERROR = True
 
 class CodeMessageEnum(Enum):
     '''
     狀態碼 訊息 is_error
-    7XX 成功
-    8XX 失敗
     '''    
     UNEXCEPTED_ERROR = (800, '不可預期錯誤', IS_ERROR)
 
